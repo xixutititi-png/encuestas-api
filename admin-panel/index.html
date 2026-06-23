@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Encuestas</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=general-sans@500,600,700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root,[data-theme='light']{--bg:#f7f6f2;--surface:#fff;--surface2:#faf8f4;--border:#ddd8d1;--text:#1f1d19;--muted:#6f6a62;--primary:#0a6f63;--primary2:#e0f1ec;--danger:#b33b4e;--warn:#c57a00;--success:#3c7a2a;--shadow:0 8px 24px rgba(0,0,0,.08);--r:16px;--font:'Satoshi',sans-serif;--display:'General Sans',sans-serif}
+    [data-theme='dark']{--bg:#141311;--surface:#1c1b18;--surface2:#22201d;--border:#34322f;--text:#ece8e2;--muted:#a09b93;--primary:#5bc1b0;--primary2:#213431;--danger:#e36b7f;--warn:#e3a83c;--success:#8ac96c;--shadow:0 12px 32px rgba(0,0,0,.35)}
+    *{box-sizing:border-box} html,body{margin:0;height:100%} body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased} button,input,select,textarea{font:inherit} a{color:inherit;text-decoration:none}
+    .wrap{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+    .side{background:var(--surface);border-right:1px solid var(--border);padding:24px;position:sticky;top:0;height:100vh;overflow:auto}
+    .brand{display:flex;align-items:center;gap:12px;font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:28px}
+    .nav{display:flex;flex-direction:column;gap:8px}.nav a{padding:12px 14px;border-radius:12px;color:var(--muted);font-weight:700}.nav a.active,.nav a:hover{background:var(--primary2);color:var(--primary)}
+    .main{padding:24px;display:flex;flex-direction:column;gap:20px}
+    .top{display:flex;justify-content:space-between;gap:16px;align-items:center}.top h1{margin:0;font-family:var(--display);font-size:34px;letter-spacing:-.03em}.top p{margin:6px 0 0;color:var(--muted)}
+    .row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+    .kpi{padding:18px}.kpi .label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}.kpi .value{font-size:34px;font-family:var(--display);margin-top:8px}.kpi .sub{margin-top:8px;color:var(--muted)}
+    .panel{padding:18px}.panel h2{margin:0 0 4px;font-size:20px}.panel p{margin:0 0 16px;color:var(--muted)}
+    .grid2{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.grid2 .card{min-height:360px}
+    .chart{height:300px}.chart.sm{height:240px}
+    .barrow{display:flex;align-items:center;gap:12px;margin-bottom:12px}.barrow .lbl{width:140px;color:var(--muted);font-size:13px}.track{flex:1;height:10px;background:var(--surface2);border-radius:999px;overflow:hidden}.fill{height:100%;background:var(--primary);border-radius:999px}
+    .btn{border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer}.btn.primary{background:var(--primary);color:#fff}.btn.sec{background:var(--surface2);border:1px solid var(--border)}
+    .field{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}.field label{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .input,.select,.textarea{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);outline:none}.textarea{min-height:100px;resize:vertical}
+    .list{display:flex;flex-direction:column;gap:12px}.item{padding:14px;border-top:1px solid var(--border)}.item:first-child{border-top:none}.item h3{margin:0 0 4px;font-size:16px}.item p{margin:0;color:var(--muted);font-size:14px}
+    .badge{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}.live{background:rgba(60,122,42,.12);color:var(--success)}.draft{background:rgba(197,122,0,.12);color:var(--warn)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:12px;border-top:1px solid var(--border);text-align:left;vertical-align:top;font-size:14px}.table th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px}.qbox{padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface2)}.qhead{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px}.pills{display:flex;flex-wrap:wrap;gap:8px}.pill{padding:6px 10px;border-radius:999px;background:var(--primary2);color:var(--primary);font-weight:700;font-size:12px}
+    .view{display:none}.view.active{display:block}.mobile{display:none}
+    @media (max-width: 980px){.wrap{grid-template-columns:1fr}.side{position:fixed;left:0;top:0;width:280px;transform:translateX(-100%);transition:.2s;z-index:20}.side.open{transform:translateX(0)}.row,.grid2,.split{grid-template-columns:1fr}.mobile{display:inline-flex}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <aside class="side" id="side">
+    <div class="brand">EncuestaHub Admin</div>
+    <div class="nav">
+      <a href="#dashboard" data-route class="active">Dashboard</a>
+      <a href="#resultados" data-route>Resultados</a>
+      <a href="#cruces" data-route>Cruces por edad</a>
+      <a href="#encuestas" data-route>Encuestas</a>
+      <a href="#crear" data-route>Crear encuesta</a>
+      <a href="#ajustes" data-route>Ajustes</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <div>
+        <h1 id="title">Dashboard</h1>
+        <p id="subtitle">Conecta tu cuenta de Railway y administra encuestas.</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn sec mobile" id="menuBtn">Menú</button>
+        <button class="btn sec" id="themeBtn">Tema</button>
+        <button class="btn primary" id="loginBtn">Iniciar sesión</button>
+      </div>
+    </div>
+
+    <section class="view active" id="view-dashboard">
+      <div class="row">
+        <div class="card kpi"><div class="label">Respuestas</div><div class="value" id="kpiTotal">0</div><div class="sub">Total acumulado</div></div>
+        <div class="card kpi"><div class="label">Encuestas</div><div class="value" id="kpiSurveys">0</div><div class="sub">Publicadas y borradores</div></div>
+        <div class="card kpi"><div class="label">Activas</div><div class="value" id="kpiLive">0</div><div class="sub">Publicadas</div></div>
+        <div class="card kpi"><div class="label">Grupo top</div><div class="value" id="kpiAge">—</div><div class="sub">Mayor participación</div></div>
+      </div>
+      <div class="grid2">
+        <div class="card panel"><h2>Respuestas por día</h2><p>Actividad reciente de la encuesta seleccionada.</p><div class="chart"><canvas id="trendChart"></canvas></div></div>
+        <div class="card panel"><h2>Distribución por edad</h2><p>Participación acumulada por rango de edad.</p><div class="chart sm"><canvas id="ageChart"></canvas></div></div>
+      </div>
+      <div class="card panel"><h2>Encuestas recientes</h2><p>Lista rápida para entrar a cada encuesta.</p><div class="list" id="recentList"></div></div>
+    </section>
+
+    <section class="view" id="view-resultados">
+      <div class="card panel">
+        <h2>Resultados por pregunta</h2><p>Consulta porcentajes de la encuesta seleccionada.</p>
+        <div class="field" style="max-width:360px"><label>Encuesta</label><select class="select" id="surveySelect"></select></div>
+        <div id="questionCharts"></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-cruces">
+      <div class="split">
+        <div class="card panel">
+          <h2>Cruce por edad</h2><p>Selecciona encuesta y pregunta.</p>
+          <div class="field"><label>Encuesta</label><select class="select" id="crossSurvey"></select></div>
+          <div class="field"><label>Pregunta</label><select class="select" id="crossQuestion"></select></div>
+          <div class="chart"><canvas id="crossChart"></canvas></div>
+        </div>
+        <div class="card panel">
+          <h2>Lectura rápida</h2><p>Hallazgos por grupo etario.</p>
+          <div class="list" id="crossInsights"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-encuestas">
+      <div class="card panel">
+        <h2>Gestor de encuestas</h2><p>Activa, pausa, duplica o elimina.</p>
+        <div style="overflow:auto"><table class="table"><thead><tr><th>Nombre</th><th>Estado</th><th>Respuestas</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody id="surveyTable"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-crear">
+      <div class="split">
+        <div class="card panel">
+          <h2>Nueva encuesta</h2><p>Se guarda directo en tu API de Railway.</p>
+          <div class="field"><label>Título</label><input class="input" id="newTitle" placeholder="Encuesta electoral Culiacán 2026"></div>
+          <div class="field"><label>Descripción</label><textarea class="textarea" id="newDesc" placeholder="Objetivo de la encuesta"></textarea></div>
+          <div class="split">
+            <div class="field"><label>Slug</label><input class="input" id="newSlug" placeholder="encuesta-culiacan-2026"></div>
+            <div class="field"><label>Estado</label><select class="select" id="newStatus"><option value="live">Publicada</option><option value="draft">Borrador</option></select></div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" id="saveSurveyBtn">Guardar encuesta</button><button class="btn sec" id="templateBtn">Cargar ejemplo</button></div>
+        </div>
+        <div class="card panel">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h2>Preguntas</h2><p>Agrega opciones o texto abierto.</p></div><button class="btn sec" id="addQBtn">Añadir</button></div>
+          <div id="builder" class="list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-ajustes">
+      <div class="card panel">
+        <h2>Conexión</h2><p>Antes de usar el panel, pega tu token y la URL de Railway.</p>
+        <div class="field"><label>API URL</label><input class="input" id="apiUrl" value="https://encuestas-api-production.up.railway.app"></div>
+        <div class="field"><label>Token admin</label><textarea class="textarea" id="token" placeholder="Pega aquí el token que te dio login"></textarea></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" id="saveCfg">Guardar conexión</button><button class="btn sec" id="testLoginBtn">Probar login</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+const state={apiUrl:'https://encuestas-api-production.up.railway.app',token:'',surveys:[],selectedSurveyId:null,charts:{},draftQuestions:[{text:'¿Cuál es el principal problema de tu ciudad?',type:'single',options:['Seguridad','Empleo','Servicios públicos','Corrupción']},{text:'¿Cómo calificas al gobierno actual?',type:'single',options:['Muy buena','Buena','Regular','Mala','Muy mala']},{text:'¿Qué edad tienes?',type:'single',options:['18–25','26–35','36–50','51–65','65+']}],theme:'light'};
+const qs=s=>document.querySelector(s), qsa=s=>[...document.querySelectorAll(s)];
+function setTheme(t){state.theme=t;document.documentElement.setAttribute('data-theme',t)}
+function toggleTheme(){setTheme(state.theme==='light'?'dark':'light')}
+function api(path){return state.apiUrl.replace(/\/$/,'')+path}
+async function request(path,opts={}){const headers=opts.headers||{};if(state.token&&path!='/api/auth/login')headers.Authorization='Bearer '+state.token;if(!(opts.body instanceof FormData)&&opts.body)headers['Content-Type']='application/json';const r=await fetch(api(path),{...opts,headers});const t=await r.text();let j;try{j=JSON.parse(t)}catch{j=t}if(!r.ok)throw new Error(j.error||t||'Error');return j}
+function route(){const r=(location.hash||'#dashboard').replace('#','');qsa('[data-route]').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+r));qsa('.view').forEach(v=>v.classList.remove('active'));const map={dashboard:['Dashboard','Visión general de respuestas, participación y segmentos.'],resultados:['Resultados','Porcentajes por pregunta y encuesta.'],cruces:['Cruces por edad','Compara respuestas entre segmentos etarios.'],encuestas:['Encuestas','Administra estado, volumen y acciones.'],crear:['Crear encuesta','Configura una nueva encuesta y sus preguntas.'],ajustes:['Ajustes','Conecta tu API y token.']};const k=map[r]||map.dashboard;qs('#title').textContent=k[0];qs('#subtitle').textContent=k[1];qs('#view-'+(map[r]?r:'dashboard')).classList.add('active');if(r==='dashboard')renderDashboard();if(r==='resultados')renderResults();if(r==='cruces')renderCross();if(r==='encuestas')renderTable();if(r==='crear')renderBuilder()}
+async function loadSurveys(){state.surveys=await request('/api/surveys');if(!state.selectedSurveyId&&state.surveys[0])state.selectedSurveyId=state.surveys[0].id;renderDashboard();}
+function color(){const c=getComputedStyle(document.documentElement);return {p:c.getPropertyValue('--primary').trim(),m:c.getPropertyValue('--muted').trim(),b:c.getPropertyValue('--border').trim(),t:c.getPropertyValue('--text').trim(),s:c.getPropertyValue('--surface2').trim()}}
+function destroy(name){if(state.charts[name]){state.charts[name].destroy();delete state.charts[name]}}
+function baseOpts(){const c=color();return {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:c.t,font:{family:'Satoshi',size:12}}},tooltip:{backgroundColor:state.theme==='dark'?'#22201d':'#fff',titleColor:c.t,bodyColor:c.t,borderColor:c.b,borderWidth:1}},scales:{x:{ticks:{color:c.m}},y:{ticks:{color:c.m},grid:{color:c.b}}}}}
+async function renderDashboard(){if(!state.surveys.length)await loadSurveys();qs('#kpiTotal').textContent=state.surveys.reduce((a,s)=>a+(s.responses||0),0).toLocaleString('es-MX');qs('#kpiSurveys').textContent=state.surveys.length;qs('#kpiLive').textContent=state.surveys.filter(s=>s.status==='live').length;qs('#kpiAge').textContent='—';qs('#recentList').innerHTML=state.surveys.map(s=>`<div class="item"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h3>${s.title}</h3><p>${s.description||''}</p></div><div style="display:flex;gap:8px;align-items:center"><span class="badge ${s.status}">${s.status==='live'?'Publicada':'Borrador'}</span><button class="btn sec" onclick="setSurvey(${s.id})">Abrir</button></div></div></div>`).join('');if(!state.surveys[0])return;const s=state.surveys[0];destroy('trend');state.charts.trend=new Chart(qs('#trendChart'),{type:'line',data:{labels:['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],datasets:[{label:'Respuestas',data:[12,18,22,19,27,35,31],borderColor:color().p,backgroundColor:'rgba(10,111,99,.12)',fill:true,tension:.35,pointRadius:3}]},options:{...baseOpts(),plugins:{legend:{display:false}}}});destroy('age');state.charts.age=new Chart(qs('#ageChart'),{type:'doughnut',data:{labels:['18–25','26–35','36–50','51–65','65+'],datasets:[{data:[22,28,30,15,5],backgroundColor:[color().p,'#2f6df2','#7a39bb','#3c7a2a','#c57a00']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:color().t}}}}})}
+function setSurvey(id){state.selectedSurveyId=id;location.hash='#resultados'}
+function fillSelects(){const opts=state.surveys.map(s=>`<option value="${s.id}">${s.title}</option>`).join('');['surveySelect','crossSurvey'].forEach(id=>{const el=qs('#'+id);if(el){el.innerHTML=opts;el.value=state.selectedSurveyId||state.surveys[0]?.id||''}})}
+async function renderResults(){if(!state.surveys.length)await loadSurveys();fillSelects();const sel=qs('#surveySelect');sel.onchange=()=>{state.selectedSurveyId=+sel.value;renderResults()};const survey=state.surveys.find(s=>s.id===+(sel.value||state.selectedSurveyId))||state.surveys[0];if(!survey)return;const results=await request(`/api/surveys/${survey.id}/results`);const byQ={};results.forEach(r=>{(byQ[r.question_id]??=[]).push(r)});qs('#questionCharts').innerHTML=Object.entries(byQ).map(([qid,arr])=>`<div class="card" style="padding:16px;margin-top:14px"><h3 style="margin:0 0 4px">${arr[0].question_text}</h3><p style="margin:0 0 12px;color:var(--muted)">${survey.title}</p><div style="height:260px"><canvas id="q_${qid}"></canvas></div></div>`).join('');Object.entries(byQ).forEach(([qid,arr])=>{destroy('q_'+qid);state.charts['q_'+qid]=new Chart(qs('#q_'+qid),{type:'bar',data:{labels:arr.map(x=>x.option_label),datasets:[{label:'%',data:arr.map(x=>x.pct),backgroundColor:[color().p,'#2f6df2','#7a39bb','#3c7a2a','#c57a00']}]},options:{...baseOpts(),plugins:{legend:{display:false}},scales:{x:{ticks:{color:color().m}},y:{beginAtZero:true,max:100,ticks:{color:color().m,callback:v=>v+'%'}}}}})})}
+async function renderCross(){if(!state.surveys.length)await loadSurveys();fillSelects();const sSel=qs('#crossSurvey'), qSel=qs('#crossQuestion');const syncQ=()=>{const s=state.surveys.find(x=>x.id===+sSel.value)||state.surveys[0];if(!s)return;qSel.innerHTML=s.questions?.map(q=>`<option value="${q.id}">${q.text}</option>`).join('')||'<option>Sin preguntas</option>'};sSel.onchange=()=>{state.selectedSurveyId=+sSel.value;syncQ();renderCrossPlot()};qSel.onchange=()=>renderCrossPlot();syncQ();await renderCrossPlot()}
+async function renderCrossPlot(){const s=state.surveys.find(x=>x.id===+qs('#crossSurvey').value)||state.surveys[0];if(!s)return;const q=qs('#crossQuestion').value||s.questions?.[0]?.id;if(!q)return;const rows=await request(`/api/surveys/${s.id}/results/by-age?question_id=${q}`);const ages=[...new Set(rows.map(r=>r.age_range))];const opts=[...new Set(rows.map(r=>r.option_label))];const map={};rows.forEach(r=>{map[r.age_range]??={};map[r.age_range][r.option_label]=r.pct});destroy('cross');state.charts.cross=new Chart(qs('#crossChart'),{type:'bar',data:{labels:ages,datasets:opts.map((o,i)=>({label:o,data:ages.map(a=>map[a]?.[o]||0),backgroundColor:['#0a6f63','#2f6df2','#7a39bb','#3c7a2a','#c57a00'][i%5]}))},options:{...baseOpts(),scales:{x:{ticks:{color:color().m}},y:{beginAtZero:true,max:100,ticks:{color:color().m,callback:v=>v+'%'}}}}});qs('#crossInsights').innerHTML=ages.map(a=>{const best=Object.entries(map[a]||{}).sort((x,y)=>y[1]-x[1])[0];return `<div class="item"><h3>${a}</h3><p>La opción dominante es <strong>${best?.[0]||'—'}</strong> con ${best?.[1]||0}%.</p></div>`}).join('')}
+async function renderTable(){if(!state.surveys.length)await loadSurveys();qs('#surveyTable').innerHTML=state.surveys.map(s=>`<tr><td><strong>${s.title}</strong><br><span style="color:var(--muted)">/${s.slug}</span></td><td><span class="badge ${s.status}">${s.status==='live'?'Publicada':'Borrador'}</span></td><td>${s.responses||0}</td><td>${s.created_at?.slice(0,10)||''}</td><td><div class="actions"><button class="btn sec" onclick="setSurvey(${s.id})">Resultados</button><button class="btn sec" onclick="toggleSurvey(${s.id},'${s.status==='live'?'draft':'live'}')">${s.status==='live'?'Pausar':'Publicar'}</button><button class="btn sec" onclick="dupSurvey(${s.id})">Duplicar</button></div></td></tr>`).join('')}
+async function toggleSurvey(id,status){await request(`/api/surveys/${id}`,{method:'PATCH',body:JSON.stringify({status})});await loadSurveys();location.hash='#encuestas'}
+async function dupSurvey(id){const s=state.surveys.find(x=>x.id===id);if(!s)return;const payload={title:s.title+' (copia)',description:s.description,slug:s.slug+'-copia-'+Date.now(),status:'draft',questions:s.questions||[]};await request('/api/surveys',{method:'POST',body:JSON.stringify(payload)});await loadSurveys();location.hash='#encuestas'}
+function renderBuilder(){qs('#builder').innerHTML=state.draftQuestions.map((q,i)=>`<div class="qbox"><div class="qhead"><strong>Pregunta ${i+1}</strong><button class="btn sec" onclick="removeQ(${i})">Eliminar</button></div><div class="field"><label>Texto</label><input class="input" value="${q.text}" oninput="state.draftQuestions[${i}].text=this.value"></div><div class="split"><div class="field"><label>Tipo</label><select class="select" onchange="state.draftQuestions[${i}].type=this.value"><option value="single" ${q.type==='single'?'selected':''}>Opción única</option><option value="open" ${q.type==='open'?'selected':''}>Abierta</option></select></div><div class="field"><label>Opciones</label><input class="input" value="${q.options.join(', ')}" oninput="state.draftQuestions[${i}].options=this.value.split(',').map(v=>v.trim()).filter(Boolean)"></div></div><div class="pills">${q.options.map(o=>`<span class="pill">${o}</span>`).join('')}</div></div>`).join('')}
+function removeQ(i){state.draftQuestions.splice(i,1);renderBuilder()}
+async function saveSurvey(){const title=qs('#newTitle').value.trim(),description=qs('#newDesc').value.trim(),slug=qs('#newSlug').value.trim(),status=qs('#newStatus').value;if(!title||!slug||!state.draftQuestions.length)return alert('Completa título, slug y preguntas.');await request('/api/surveys',{method:'POST',body:JSON.stringify({title,description,slug,status,questions:state.draftQuestions})});state.draftQuestions=[];renderBuilder();await loadSurveys();location.hash='#encuestas'}
+async function doLogin(){const email=prompt('Email admin','admin@encuestas.mx');if(!email)return;const password=prompt('Password admin','Admin1234');if(!password)return;const res=await request('/api/auth/login',{method:'POST',body:JSON.stringify({email,password})});state.token=res.token;alert('Login correcto');localStorage.setItem('token',state.token)}
+qs('#loginBtn').onclick=doLogin;qs('#themeBtn').onclick=toggleTheme;qs('#menuBtn').onclick=()=>qs('#side').classList.toggle('open');qs('#saveCfg').onclick=()=>{state.apiUrl=qs('#apiUrl').value.trim();state.token=qs('#token').value.trim();localStorage.setItem('apiUrl',state.apiUrl);localStorage.setItem('token',state.token);alert('Guardado')};qs('#testLoginBtn').onclick=doLogin;qs('#saveSurveyBtn').onclick=saveSurvey;qs('#addQBtn').onclick=()=>{state.draftQuestions.push({text:'Nueva pregunta',type:'single',options:['Opción 1','Opción 2']});renderBuilder()};qs('#templateBtn').onclick=()=>{state.draftQuestions=[{text:'¿Cuál es el principal problema de tu ciudad?',type:'single',options:['Seguridad','Empleo','Servicios públicos','Corrupción']},{text:'¿Cómo calificas al gobierno actual?',type:'single',options:['Muy buena','Buena','Regular','Mala','Muy mala']},{text:'¿Qué edad tienes?',type:'single',options:['18–25','26–35','36–50','51–65','65+']}];renderBuilder()};qsa('[data-route]').forEach(a=>a.onclick=()=>setTimeout(route,0));window.addEventListener('hashchange',route);state.apiUrl=localStorage.getItem('apiUrl')||state.apiUrl;state.token=localStorage.getItem('token')||'';qs('#apiUrl').value=state.apiUrl;qs('#token').value=state.token;setTheme('light');route();loadSurveys().catch(()=>{});
+</script>
+</body>
+</html>

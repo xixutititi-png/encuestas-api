@@ -30,9 +30,14 @@ function auth(req, res, next) {
    ARCHIVOS ESTÁTICOS
 ========================= */
 app.use('/admin', express.static(path.join(__dirname, 'admin-panel')));
+app.use('/survey', express.static(path.join(__dirname, 'public')));
 
 app.get('/admin', (_, res) => {
   res.sendFile(path.join(__dirname, 'admin-panel', 'index.html'));
+});
+
+app.get('/survey/:slug', (_, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/', (_, res) => {
@@ -111,7 +116,7 @@ app.post('/api/surveys', auth, async (req, res) => {
         [survey.id, q.text, q.type || 'single', qi]
       );
 
-      if (q.options) {
+      if (q.options && Array.isArray(q.options)) {
         for (let oi = 0; oi < q.options.length; oi++) {
           await client.query(
             `INSERT INTO question_options (question_id, label, sort_order)
@@ -179,9 +184,12 @@ app.get('/api/public/surveys/:slug', async (req, res) => {
          q.id,
          q.text,
          q.type,
-         json_agg(
-           json_build_object('id', o.id, 'label', o.label)
-           ORDER BY o.sort_order
+         COALESCE(
+           json_agg(
+             json_build_object('id', o.id, 'label', o.label)
+             ORDER BY o.sort_order
+           ) FILTER (WHERE o.id IS NOT NULL),
+           '[]'
          ) AS options
        FROM questions q
        LEFT JOIN question_options o ON o.question_id = q.id
@@ -211,7 +219,7 @@ app.post('/api/public/responses', async (req, res) => {
       [survey_id, age_range, source_channel || 'web']
     );
 
-    for (const a of answers) {
+    for (const a of answers || []) {
       await client.query(
         `INSERT INTO response_answers
          (response_id, question_id, option_id, open_text)

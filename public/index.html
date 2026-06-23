@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Encuesta Ciudadana</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&f[]=general-sans@500,600,700&display=swap" rel="stylesheet">
+  <style>
+    :root,[data-theme='light']{--bg:#f7f6f2;--surface:#fff;--surface2:#faf8f4;--border:#ddd8d1;--text:#1f1d19;--muted:#6f6a62;--primary:#0a6f63;--primary2:#e0f1ec;--shadow:0 8px 24px rgba(0,0,0,.08);--r:16px;--font:'Satoshi',sans-serif;--display:'General Sans',sans-serif}
+    [data-theme='dark']{--bg:#141311;--surface:#1c1b18;--surface2:#22201d;--border:#34322f;--text:#ece8e2;--muted:#a09b93;--primary:#5bc1b0;--primary2:#213431;--shadow:0 12px 32px rgba(0,0,0,.35)}
+    *{box-sizing:border-box} html,body{margin:0;min-height:100%} body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+    .page{max-width:760px;margin:0 auto;padding:24px 16px 64px}
+    .hero{padding:28px 22px;text-align:center}
+    .badge{display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:var(--primary2);color:var(--primary);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+    h1{font-family:var(--display);font-size:clamp(32px,5vw,52px);line-height:1.02;margin:0 0 10px}
+    p.lead{margin:0 auto;max-width:60ch;color:var(--muted);font-size:18px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:22px}
+    .progress{height:8px;background:var(--surface2);border-radius:999px;overflow:hidden;margin:18px 0 8px}
+    .fill{height:100%;width:0;background:var(--primary);border-radius:999px;transition:width .25s ease}
+    .topline{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--muted)}
+    .qtext{font-size:22px;font-weight:800;line-height:1.25;margin:14px 0 18px}
+    .options{display:flex;flex-direction:column;gap:12px}
+    .opt{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);cursor:pointer}
+    .opt.sel{border-color:var(--primary);background:var(--primary2)}
+    .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);position:relative;flex:0 0 18px}
+    .opt.sel .dot{border-color:var(--primary)}
+    .opt.sel .dot:after{content:'';position:absolute;inset:4px;border-radius:50%;background:var(--primary)}
+    .nav{display:flex;justify-content:space-between;gap:12px;margin-top:18px}
+    .btn{border:none;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer}
+    .primary{background:var(--primary);color:#fff}.sec{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+    .textarea{width:100%;min-height:120px;resize:vertical;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;color:var(--text)}
+    .result{display:none;text-align:center;padding:32px 10px}
+    .share{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+    .share a,.share button{display:inline-flex;align-items:center;justify-content:center}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="badge">Encuesta ciudadana</div>
+      <h1 id="surveyTitle">Cargando encuesta...</h1>
+      <p class="lead" id="surveyDesc">Espere un momento.</p>
+    </section>
+
+    <section class="card" id="surveyCard">
+      <div class="topline">
+        <span id="qCount">Pregunta 1 de 1</span>
+        <span id="pct">0%</span>
+      </div>
+      <div class="progress"><div class="fill" id="fill"></div></div>
+      <div class="qtext" id="qText"></div>
+      <div class="options" id="options"></div>
+      <div id="openWrap" style="display:none;margin-top:12px">
+        <textarea class="textarea" id="openText" placeholder="Escribe tu respuesta..."></textarea>
+      </div>
+      <div class="nav">
+        <button class="btn sec" id="prevBtn">Anterior</button>
+        <button class="btn primary" id="nextBtn">Siguiente</button>
+      </div>
+    </section>
+
+    <section class="card result" id="resultCard">
+      <h2>¡Gracias por participar!</h2>
+      <p>Tu respuesta fue enviada correctamente.</p>
+      <div class="share">
+        <button class="btn primary" id="shareWa">Compartir por WhatsApp</button>
+        <button class="btn sec" id="shareCopy">Copiar enlace</button>
+      </div>
+    </section>
+  </div>
+
+<script>
+const API = 'https://encuestas-api-production.up.railway.app';
+const slug = location.pathname.split('/').filter(Boolean).pop() || 'encuesta-culiacan-2026';
+let survey = null;
+let index = 0;
+let answers = [];
+let selected = {};
+let age_range = '26–35';
+
+async function loadSurvey() {
+  const r = await fetch(`${API}/api/public/surveys/${slug}`);
+  if (!r.ok) {
+    document.getElementById('surveyTitle').textContent = 'Encuesta no encontrada';
+    document.getElementById('surveyDesc').textContent = 'No existe o no está publicada.';
+    return;
+  }
+  survey = await r.json();
+  document.getElementById('surveyTitle').textContent = survey.title;
+  document.getElementById('surveyDesc').textContent = survey.description || '';
+  answers = survey.questions.map(() => null);
+  render();
+}
+
+function render() {
+  const q = survey.questions[index];
+  document.getElementById('qCount').textContent = `Pregunta ${index + 1} de ${survey.questions.length}`;
+  document.getElementById('pct').textContent = Math.round(((index + 1) / survey.questions.length) * 100) + '%';
+  document.getElementById('fill').style.width = Math.round(((index + 1) / survey.questions.length) * 100) + '%';
+  document.getElementById('qText').textContent = q.text;
+  const options = document.getElementById('options');
+  const openWrap = document.getElementById('openWrap');
+  options.innerHTML = '';
+
+  if (q.type === 'open') {
+    openWrap.style.display = 'block';
+    options.style.display = 'none';
+  } else {
+    openWrap.style.display = 'none';
+    options.style.display = 'flex';
+    q.options.filter(Boolean).forEach(opt => {
+      const el = document.createElement('div');
+      el.className = 'opt' + (selected[q.id] === opt.id ? ' sel' : '');
+      el.innerHTML = `<span class="dot"></span><span>${opt.label}</span>`;
+      el.onclick = () => { selected[q.id] = opt.id; render(); };
+      options.appendChild(el);
+    });
+  }
+
+  document.getElementById('prevBtn').disabled = index === 0;
+  document.getElementById('nextBtn').textContent = index === survey.questions.length - 1 ? 'Enviar' : 'Siguiente';
+}
+
+async function sendSurvey() {
+  const payload = {
+    survey_id: survey.id,
+    age_range,
+    source_channel: 'web',
+    answers: survey.questions.map(q => {
+      if (q.type === 'open') return { question_id: q.id, open_text: document.getElementById('openText').value.trim() };
+      return { question_id: q.id, option_id: selected[q.id] || null };
+    })
+  };
+  const r = await fetch(`${API}/api/public/responses`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!r.ok) {
+    alert('No se pudo enviar la respuesta');
+    return;
+  }
+  document.getElementById('surveyCard').style.display = 'none';
+  document.getElementById('resultCard').style.display = 'block';
+}
+
+document.getElementById('prevBtn').onclick = () => { if (index > 0) { index--; render(); } };
+document.getElementById('nextBtn').onclick = async () => {
+  if (!survey) return;
+  if (index < survey.questions.length - 1) {
+    index++;
+    render();
+  } else {
+    await sendSurvey();
+  }
+};
+
+document.getElementById('shareWa').onclick = () => {
+  const txt = encodeURIComponent(`Responde la encuesta: ${location.href}`);
+  window.open(`https://wa.me/?text=${txt}`, '_blank');
+};
+
+document.getElementById('shareCopy').onclick = async () => {
+  await navigator.clipboard.writeText(location.href);
+  alert('Enlace copiado');
+};
+
+loadSurvey();
+</script>
+</body>
+</html>
